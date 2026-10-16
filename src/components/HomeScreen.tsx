@@ -45,7 +45,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     );
   });
 
-  const featuredDrama = dramas[0]; // Vagabond
+  const featuredDrama = dramas.find((d) => d.isFeatured) || dramas[0];
+
+  if (!featuredDrama) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-[#0C0C10] text-slate-400 p-8 text-xs">
+        Loading ShortFlix Catalog...
+      </div>
+    );
+  }
 
   const loveStoryDramas = dramas.filter((d) => d.category === 'Love Story');
   const thrillerDramas = dramas.filter((d) => d.category === 'Thriller');

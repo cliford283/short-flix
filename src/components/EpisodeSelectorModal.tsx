@@ -28,14 +28,16 @@ export const EpisodeSelectorModal: React.FC<EpisodeSelectorModalProps> = ({
   const [unlockError, setUnlockError] = useState<string | null>(null);
 
   const batchSize = 15;
-  const totalBatches = Math.ceil(drama.totalEpisodes / batchSize);
+  const episodes = Array.isArray(drama?.episodes) ? drama.episodes : [];
+  const totalEpisodes = drama?.totalEpisodes || episodes.length || 1;
+  const totalBatches = Math.max(1, Math.ceil(totalEpisodes / batchSize));
   const batches = Array.from({ length: totalBatches }, (_, i) => {
     const start = i * batchSize + 1;
-    const end = Math.min((i + 1) * batchSize, drama.totalEpisodes);
+    const end = Math.min((i + 1) * batchSize, totalEpisodes);
     return { index: i, label: `${start}-${end}`, start, end };
   });
 
-  const currentBatchEpisodes = drama.episodes.slice(
+  const currentBatchEpisodes = episodes.slice(
     activeBatch * batchSize,
     (activeBatch + 1) * batchSize
   );

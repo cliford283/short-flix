@@ -62,21 +62,31 @@ export const VerticalPlayer: React.FC<VerticalPlayerProps> = ({
   // Derive progress percentage directly from currentTime and totalDuration
   const progress = Math.min(100, Math.max(0, (currentTime / totalDuration) * 100));
 
+  const episodes = Array.isArray(drama?.episodes) ? drama.episodes : [];
   const currentEp: Episode =
-    drama.episodes.find((e) => e.number === currentEpisodeNumber) ||
-    drama.episodes[0];
+    episodes.find((e) => e.number === currentEpisodeNumber) ||
+    episodes[0] || {
+      id: 1,
+      number: currentEpisodeNumber || 1,
+      title: `Episode ${currentEpisodeNumber || 1}`,
+      duration: '1:45',
+      isFree: true,
+      coinPrice: 0,
+      isUnlocked: true,
+      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    };
 
   // Alternates between the actress still and the actor still based on pause or episode
-  const activeBackdrop = !isPlaying && drama.id === 'vagabond'
+  const activeBackdrop = !isPlaying && drama?.id === 'vagabond'
     ? actorVagabond
-    : drama.id === 'vagabond'
+    : drama?.id === 'vagabond'
     ? actressVagabond
-    : drama.backdrop || drama.poster;
+    : drama?.backdrop || drama?.poster || actressVagabond;
 
   // Reset time when drama or episode changes
   useEffect(() => {
     setCurrentTime(0);
-  }, [drama.id, currentEpisodeNumber]);
+  }, [drama?.id, currentEpisodeNumber]);
 
   // Safely keep a ref to the latest onNextEpisode to prevent calling stale or inline functions
   const onNextEpisodeRef = useRef(onNextEpisode);
@@ -400,7 +410,7 @@ export const VerticalPlayer: React.FC<VerticalPlayerProps> = ({
             className="flex-1 py-2.5 px-4 rounded-full bg-[#FA4D1E] hover:bg-[#E53D12] text-white text-xs font-bold text-center shadow-lg shadow-[#FA4D1E]/40 active:scale-98 transition-all flex items-center justify-center gap-1.5"
           >
             <Play className="w-3.5 h-3.5 fill-white" />
-            <span>Watch {drama.freeEpisodesCount} episodes free</span>
+            <span>Watch {drama?.freeEpisodesCount ?? 9} episodes free</span>
           </button>
         </div>
 

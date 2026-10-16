@@ -1,42 +1,50 @@
 import React, { useState } from 'react';
-import { X, ArrowLeft } from 'lucide-react';
+import { X, ArrowLeft, Crown, Check, ShieldCheck, Zap, CreditCard, RefreshCw } from 'lucide-react';
 
 interface SubscriptionModalProps {
   isVip: boolean;
-  onUpgradeToVip: (plan: 'monthly' | 'yearly') => void;
+  vipExpiry?: string;
+  onUpgradeToVip: (plan: 'daily' | 'monthly', paymentProvider?: string) => Promise<void> | void;
   onClose: () => void;
 }
 
 export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   isVip,
+  vipExpiry,
   onUpgradeToVip,
   onClose,
 }) => {
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [selectedPlan, setSelectedPlan] = useState<'daily' | 'monthly'>('monthly');
+  const [paymentProvider, setPaymentProvider] = useState<'Credit Card' | 'PayPal (Manual)'>('Credit Card');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
 
-  const handleSelectPlan = (plan: 'free' | 'premium') => {
-    if (plan === 'free') {
+  const handleConfirmPayment = async () => {
+    setIsProcessing(true);
+    try {
+      await onUpgradeToVip(selectedPlan, paymentProvider);
       onClose();
-    } else {
-      onUpgradeToVip(billingPeriod);
-      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/85 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/85 backdrop-blur-md animate-fade-in font-sans">
       <div className="bg-[#12121A] border-t border-white/10 rounded-t-3xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl safe-bottom">
         {/* Grab bar */}
         <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-2.5 mb-1" />
 
-        {/* Top Header matching Screen 17 */}
+        {/* Top Header */}
         <div className="p-4 border-b border-white/5 flex items-center justify-between">
           <button
             onClick={onClose}
             className="flex items-center gap-2 text-white font-semibold text-sm hover:text-slate-300"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Settings</span>
+            <span>ShortFlix Pass</span>
           </button>
 
           <button
@@ -48,114 +56,141 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         </div>
 
         <div className="p-4 overflow-y-auto space-y-4 no-scrollbar">
-          {/* Monthly / Yearly Switcher matching Screen 17 */}
+          {/* Active status banner */}
+          {isVip && (
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                <Crown className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-amber-300">VIP Subscription Active</div>
+                <div className="text-[11px] text-zinc-400">
+                  {vipExpiry ? `Valid until ${new Date(vipExpiry).toLocaleDateString()}` : 'Unlimited Access Enabled'}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Plan Selector: Daily Pass vs Monthly Pass */}
           <div className="flex items-center p-1 bg-[#1A1A26] rounded-xl">
             <button
-              onClick={() => setBillingPeriod('monthly')}
+              onClick={() => setSelectedPlan('daily')}
               className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
-                billingPeriod === 'monthly'
+                selectedPlan === 'daily'
                   ? 'bg-[#FA4D1E] text-white shadow-md'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Monthly
+              Daily Pass ($4.99)
             </button>
             <button
-              onClick={() => setBillingPeriod('yearly')}
+              onClick={() => setSelectedPlan('monthly')}
               className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
-                billingPeriod === 'yearly'
+                selectedPlan === 'monthly'
                   ? 'bg-[#FA4D1E] text-white shadow-md'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Yearly
+              Monthly Pass ($29.99)
             </button>
           </div>
 
-          {/* Card 1: Free Plan (Ad + Limited) matching Screen 17 */}
-          <div className="p-4 rounded-2xl bg-[#1A1A26] border border-white/5 space-y-3">
-            <div>
-              <h3 className="text-sm font-bold text-white">Free Plan (Ad + Limited)</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Price: Free</p>
+          {/* Selected Plan Details Card */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1C1C2A] to-[#14141E] border border-orange-500/30 space-y-3 relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#FA4D1E] px-2 py-0.5 rounded bg-[#FA4D1E]/20 border border-[#FA4D1E]/40">
+                  {selectedPlan === 'daily' ? '24-Hour Binge Pass' : 'Most Popular Plan'}
+                </span>
+                <h3 className="text-base font-bold text-white mt-1">
+                  {selectedPlan === 'daily' ? 'Daily All-Access Pass' : 'Monthly VIP Unlimited Pass'}
+                </h3>
+              </div>
+              <div className="text-right">
+                <span className="text-xl font-black text-white">
+                  {selectedPlan === 'daily' ? '$4.99' : '$29.99'}
+                </span>
+                <span className="text-[10px] text-zinc-400 block">
+                  {selectedPlan === 'daily' ? '/ 24 hrs' : '/ month'}
+                </span>
+              </div>
             </div>
 
-            <button
-              onClick={() => handleSelectPlan('free')}
-              className="w-full py-2.5 rounded-full bg-[#FA4D1E] hover:bg-[#E53D12] text-white text-xs font-bold shadow-md shadow-[#FA4D1E]/30 active:scale-95 transition-all text-center"
-            >
-              Get Started
-            </button>
+            <ul className="space-y-2 text-xs text-zinc-300 pt-2 border-t border-zinc-800">
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-[#FA4D1E] shrink-0" />
+                <span>Unlimited instant access to all locked episodes</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-[#FA4D1E] shrink-0" />
+                <span>No coin deductions or ad interruptions</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-[#FA4D1E] shrink-0" />
+                <span>Ultra-high definition vertical streaming</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-[#FA4D1E] shrink-0" />
+                <span>Verified transaction recorded in account ledger</span>
+              </li>
+            </ul>
 
-            <div className="pt-2">
-              <span className="text-[11px] font-semibold text-slate-400">
-                Conditions:
-              </span>
-              <ul className="mt-1.5 space-y-1 text-xs text-slate-300">
-                <li className="flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-slate-500" />
-                  Watch limited episodes per day
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-slate-500" />
-                  Ads between videos
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-slate-500" />
-                  30 mins episodes locked
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-slate-500" />
-                  Standard video quality
-                </li>
-              </ul>
-            </div>
+            {showCheckout ? (
+              <div className="pt-3 space-y-3 border-t border-zinc-800">
+                <div className="text-xs font-semibold text-zinc-300">Select Payment Method:</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentProvider('Credit Card')}
+                    className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition ${
+                      paymentProvider === 'Credit Card'
+                        ? 'bg-orange-950/40 border-[#FA4D1E] text-white'
+                        : 'bg-black/30 border-zinc-800 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>Credit Card</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentProvider('PayPal (Manual)')}
+                    className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition ${
+                      paymentProvider === 'PayPal (Manual)'
+                        ? 'bg-orange-950/40 border-[#FA4D1E] text-white'
+                        : 'bg-black/30 border-zinc-800 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <span>PayPal</span>
+                  </button>
+                </div>
+
+                <button
+                  disabled={isProcessing}
+                  onClick={handleConfirmPayment}
+                  className="w-full py-3 rounded-full bg-gradient-to-r from-[#FA4D1E] to-[#FF8C00] text-white font-bold text-xs shadow-lg shadow-orange-950/50 hover:brightness-110 active:scale-[0.98] transition flex items-center justify-center gap-2"
+                >
+                  {isProcessing ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="w-4 h-4" />
+                  )}
+                  <span>
+                    {isProcessing ? 'Verifying Transaction...' : `Confirm & Pay ${selectedPlan === 'daily' ? '$4.99' : '$29.99'}`}
+                  </span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowCheckout(true)}
+                className="w-full mt-2 py-3 rounded-full bg-[#FA4D1E] hover:bg-[#E53D12] text-white font-bold text-xs shadow-md shadow-[#FA4D1E]/30 active:scale-95 transition-all text-center cursor-pointer"
+              >
+                Proceed to Checkout
+              </button>
+            )}
           </div>
 
-          {/* Card 2: Premium Plan (Unlimited) matching Screen 17 */}
-          <div className="p-4 rounded-2xl bg-[#1A1A26] border border-white/5 space-y-3">
-            <div>
-              <h3 className="text-sm font-bold text-white">
-                Premium Plan (Unlimited)
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Price: {billingPeriod === 'monthly' ? '$30' : '$199'}
-              </p>
-            </div>
-
-            <button
-              onClick={() => handleSelectPlan('premium')}
-              className="w-full py-2.5 rounded-full bg-[#FA4D1E] hover:bg-[#E53D12] text-white text-xs font-bold shadow-md shadow-[#FA4D1E]/30 active:scale-95 transition-all text-center"
-            >
-              Get Started
-            </button>
-
-            <div className="pt-2">
-              <span className="text-[11px] font-semibold text-slate-400">
-                Conditions:
-              </span>
-              <ul className="mt-1.5 space-y-1 text-xs text-slate-300">
-                <li className="flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-[#FA4D1E]" />
-                  Watch unlimited episodes per day
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-[#FA4D1E]" />
-                  Ads-free videos
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-[#FA4D1E]" />
-                  All locked episodes free to watch
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-[#FA4D1E]" />
-                  Ultra HD & 4K video quality
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-[#FA4D1E]" />
-                  Offline download enabled
-                </li>
-              </ul>
-            </div>
+          <div className="text-[11px] text-zinc-500 text-center px-4 leading-relaxed">
+            Subscriptions are authenticated and activated through the ShortFlix transaction verification gateway. You can review your transaction history at any time.
           </div>
         </div>
       </div>

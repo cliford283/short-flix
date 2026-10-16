@@ -116,7 +116,7 @@ export const initialDramas: Drama[] = [
     director: 'Ahn Gil-ho',
     cast: ['Song Hye-kyo', 'Lee Do-hyun', 'Lim Ji-yeon'],
     trendingRank: 3,
-    isRecentlyAdded: false,
+    isRecentlyAdded: true,
     episodes: generateEpisodes(32, 6, 30),
   },
   {
@@ -156,7 +156,7 @@ export const initialDramas: Drama[] = [
     director: 'Hwang Dong-hyuk',
     cast: ['Lee Jung-jae', 'Park Hae-soo', 'Wi Ha-joon'],
     trendingRank: 5,
-    isRecentlyAdded: false,
+    isRecentlyAdded: true,
     episodes: generateEpisodes(40, 7, 32),
   },
   {

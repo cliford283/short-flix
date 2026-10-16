@@ -32,6 +32,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   // Recently Added dramas with new badge
   const recentlyAddedDramas = dramas.filter((d) => d.isRecentlyAdded);
 
+  // Sub-menu genre filter specifically for 'Recently Added' section
+  const [selectedRecentGenre, setSelectedRecentGenre] = useState<string>('All');
+  const recentSubGenres = ['All', 'Romance', 'Thriller', 'Action', 'Comedy'];
+
+  const filteredRecentDramas = recentlyAddedDramas.filter((drama) => {
+    if (selectedRecentGenre === 'All') return true;
+    return (
+      drama.category.toLowerCase().includes(selectedRecentGenre.toLowerCase()) ||
+      drama.genres?.some((g) => g.toLowerCase() === selectedRecentGenre.toLowerCase()) ||
+      drama.tags.some((t) => t.toLowerCase().includes(selectedRecentGenre.toLowerCase()))
+    );
+  });
+
   const featuredDrama = dramas[0]; // Vagabond
 
   const loveStoryDramas = dramas.filter((d) => d.category === 'Love Story');
@@ -117,10 +130,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </div>
 
-      {/* 2. 'Recently Added' Section with NEW badge */}
+      {/* 2. 'Recently Added' Section with Genre Filter Sub-Menu */}
       {selectedGenre === 'All' && (
         <div className="mb-5">
-          <div className="px-4 flex items-center justify-between mb-2.5">
+          <div className="px-4 flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-[#FA4D1E]" />
               <h3 className="text-sm font-bold text-white tracking-tight">
@@ -131,55 +144,99 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </span>
             </div>
             <button
-              onClick={() => onSelectDrama(recentlyAddedDramas[0]?.id || 'love-translated', 1)}
+              onClick={() => onSelectDrama(filteredRecentDramas[0]?.id || 'love-translated', 1)}
               className="text-[11px] text-[#FA4D1E] font-medium flex items-center"
             >
               See all <ChevronRight className="w-3 h-3 ml-0.5" />
             </button>
           </div>
 
-          <div className="px-4 flex gap-2.5 overflow-x-auto no-scrollbar">
-            {recentlyAddedDramas.map((drama) => (
-              <div
-                key={`recent-${drama.id}`}
-                onClick={() => onSelectDrama(drama.id, 1)}
-                className="flex-none w-28 cursor-pointer group"
-              >
-                <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden border border-white/10 shadow-md">
-                  <img
-                    src={drama.poster}
-                    alt={drama.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+          {/* Sub-menu to filter Recently Added by specific genres */}
+          <div className="px-4 mb-2.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            {recentSubGenres.map((subGenre) => {
+              const isActive = selectedRecentGenre === subGenre;
+              const count = subGenre === 'All'
+                ? recentlyAddedDramas.length
+                : recentlyAddedDramas.filter((d) =>
+                    d.category.toLowerCase().includes(subGenre.toLowerCase()) ||
+                    d.genres?.some((g) => g.toLowerCase() === subGenre.toLowerCase()) ||
+                    d.tags.some((t) => t.toLowerCase().includes(subGenre.toLowerCase()))
+                  ).length;
 
-                  {/* Prominent Small Badge Indicating It is NEW */}
-                  <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-emerald-500 text-white font-black text-[8px] uppercase tracking-wider shadow-md">
-                    NEW
+              return (
+                <button
+                  key={subGenre}
+                  onClick={() => setSelectedRecentGenre(subGenre)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 select-none ${
+                    isActive
+                      ? 'bg-[#FA4D1E] text-white shadow-sm shadow-[#FA4D1E]/30 font-bold'
+                      : 'bg-[#151520] hover:bg-[#1E1E2C] text-slate-400 hover:text-slate-200 border border-white/5'
+                  }`}
+                >
+                  <span>{subGenre === 'All' ? 'All New' : subGenre}</span>
+                  <span className={`text-[9px] ${isActive ? 'text-white/80' : 'text-slate-500'}`}>
+                    ({count})
                   </span>
-
-                  <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/60 text-slate-200 font-bold text-[8px]">
-                    {drama.freeEpisodesCount} Free
-                  </span>
-
-                  <div className="absolute bottom-1.5 left-1.5 right-1.5">
-                    <span className="text-[9px] text-amber-300 font-bold flex items-center gap-0.5">
-                      <Star className="w-2.5 h-2.5 fill-amber-300" />
-                      {drama.rating}
-                    </span>
-                  </div>
-                </div>
-
-                <h4 className="text-xs font-bold text-white mt-1.5 truncate group-hover:text-[#FA4D1E] transition-colors">
-                  {drama.title}
-                </h4>
-                <p className="text-[10px] text-slate-400 truncate">
-                  All {drama.totalEpisodes} episodes
-                </p>
-              </div>
-            ))}
+                </button>
+              );
+            })}
           </div>
+
+          {/* Recently Added Filtered Cards */}
+          {filteredRecentDramas.length > 0 ? (
+            <div className="px-4 flex gap-2.5 overflow-x-auto no-scrollbar">
+              {filteredRecentDramas.map((drama) => (
+                <div
+                  key={`recent-${drama.id}`}
+                  onClick={() => onSelectDrama(drama.id, 1)}
+                  className="flex-none w-28 cursor-pointer group"
+                >
+                  <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden border border-white/10 shadow-md">
+                    <img
+                      src={drama.poster}
+                      alt={drama.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+
+                    {/* Prominent Small Badge Indicating It is NEW */}
+                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-emerald-500 text-white font-black text-[8px] uppercase tracking-wider shadow-md">
+                      NEW
+                    </span>
+
+                    <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/60 text-slate-200 font-bold text-[8px]">
+                      {drama.freeEpisodesCount} Free
+                    </span>
+
+                    <div className="absolute bottom-1.5 left-1.5 right-1.5">
+                      <span className="text-[9px] text-amber-300 font-bold flex items-center gap-0.5">
+                        <Star className="w-2.5 h-2.5 fill-amber-300" />
+                        {drama.rating}
+                      </span>
+                    </div>
+                  </div>
+
+                  <h4 className="text-xs font-bold text-white mt-1.5 truncate group-hover:text-[#FA4D1E] transition-colors">
+                    {drama.title}
+                  </h4>
+                  <p className="text-[10px] text-slate-400 truncate">
+                    All {drama.totalEpisodes} episodes
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mx-4 p-4 rounded-xl bg-[#151520] border border-white/5 text-center text-xs text-slate-400">
+              <span>No recently added dramas found in {selectedRecentGenre}.</span>
+              <button
+                onClick={() => setSelectedRecentGenre('All')}
+                className="text-[#FA4D1E] ml-1.5 font-bold hover:underline"
+              >
+                Show all new
+              </button>
+            </div>
+          )}
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Heart,
   Bookmark,
@@ -51,14 +51,16 @@ export const VerticalPlayer: React.FC<VerticalPlayerProps> = ({
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
-  const [progress, setProgress] = useState<number>(32);
-  const [currentTime, setCurrentTime] = useState<number>(34);
+  const [currentTime, setCurrentTime] = useState<number>(0);
   const totalDuration = 105; // 1:45
   const [likesCount, setLikesCount] = useState<number>(124800);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
   const [showHeartBurst, setShowHeartBurst] = useState<boolean>(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState<boolean>(false);
   const [shareToast, setShareToast] = useState<boolean>(false);
+
+  // Derive progress percentage directly from currentTime and totalDuration
+  const progress = Math.min(100, Math.max(0, (currentTime / totalDuration) * 100));
 
   const currentEp: Episode =
     drama.episodes.find((e) => e.number === currentEpisodeNumber) ||
@@ -71,23 +73,37 @@ export const VerticalPlayer: React.FC<VerticalPlayerProps> = ({
     ? actressVagabond
     : drama.backdrop || drama.poster;
 
+  // Reset time when drama or episode changes
   useEffect(() => {
-    let interval: any;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentTime((prev) => {
-          const next = prev + 1 * playbackSpeed;
-          if (next >= totalDuration) {
-            onNextEpisode();
-            return 0;
-          }
-          setProgress((next / totalDuration) * 100);
-          return next;
-        });
-      }, 1000);
-    }
+    setCurrentTime(0);
+  }, [drama.id, currentEpisodeNumber]);
+
+  // Safely keep a ref to the latest onNextEpisode to prevent calling stale or inline functions
+  const onNextEpisodeRef = useRef(onNextEpisode);
+  useEffect(() => {
+    onNextEpisodeRef.current = onNextEpisode;
+  }, [onNextEpisode]);
+
+  // Main playback timer
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const interval = setInterval(() => {
+      setCurrentTime((prev) => {
+        const next = prev + 1 * playbackSpeed;
+        if (next >= totalDuration) {
+          // Defer calling the parent's next episode handler outside the state updater
+          setTimeout(() => {
+            onNextEpisodeRef.current();
+          }, 0);
+          return 0;
+        }
+        return next;
+      });
+    }, 1000);
+
     return () => clearInterval(interval);
-  }, [isPlaying, playbackSpeed, totalDuration, onNextEpisode]);
+  }, [isPlaying, playbackSpeed, totalDuration]);
 
   const togglePlayPause = () => {
     setIsPlaying((prev) => !prev);
@@ -142,7 +158,6 @@ export const VerticalPlayer: React.FC<VerticalPlayerProps> = ({
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const newPercent = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
-    setProgress(newPercent);
     setCurrentTime((newPercent / 100) * totalDuration);
   };
 
